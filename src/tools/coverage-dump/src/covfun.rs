@@ -2,11 +2,10 @@ use std::collections::HashMap;
 use std::fmt::{self, Debug, Write as _};
 use std::sync::LazyLock;
 
-use anyhow::{Context, anyhow, bail, ensure};
+use anyhow::{Context, anyhow, ensure};
 use itertools::Itertools;
 use regex::Regex;
 
-use crate::covmap::FilenameTables;
 use crate::llvm_utils::unescape_llvm_string_contents;
 use crate::parser::Parser;
 
@@ -15,7 +14,6 @@ mod tests;
 
 pub(crate) fn dump_covfun_mappings(
     llvm_ir: &str,
-    filename_tables: &FilenameTables,
     function_names: &HashMap<u64, String>,
 ) -> anyhow::Result<()> {
     // Extract function coverage entries from the LLVM IR assembly, and associate
@@ -51,12 +49,7 @@ pub(crate) fn dump_covfun_mappings(
         println!("Number of files: {num_files}");
 
         for i in 0..num_files {
-            let global_file_id = parser.read_uleb128_usize()?;
-            let &CovfunLineData { filenames_hash, .. } = line_data;
-            #[expect(unused)] // Removed later in this PR.
-            let Some(filename) = filename_tables.lookup(filenames_hash, global_file_id) else {
-                bail!("couldn't resolve global file: {filenames_hash}, {global_file_id}");
-            };
+            let global_file_id = parser.read_uleb128_u32()?;
             println!("- file {i} => global file {global_file_id}");
         }
 
